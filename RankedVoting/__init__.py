@@ -1,3 +1,3 @@
-from .ranked_voting import RankedVoting
+from .RankedVoting import RankedVoting
 from .RankedVotingFromCSV import RankedVotingFromCSV
 from .RankedVotingFromYAML import RankedVotingFromYAML
