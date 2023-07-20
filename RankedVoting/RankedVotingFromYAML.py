@@ -1,6 +1,7 @@
 import RankedVoting
 import os
 import yaml
+from typing import Tuple, List, Dict
 
 class RankedVotingFromYAML(RankedVoting):
     """
@@ -73,17 +74,14 @@ class RankedVotingFromYAML(RankedVoting):
                 voter_name = voter_data[0]["Voter"]
                 self.voters[voter_name] = voter_data[0]
 
-    def run_ranked_voting(self) -> None:
+    def run_ranked_voting(self) -> Tuple[Dict[str, float], str]:
         """
-        Executes the ranked voting process using voter preferences and determines the winner.
-
-        Args:
-            None
+        Run the ranked voting calculations using preferences from the YAML file.
 
         Returns:
-            None
+            Tuple[Dict[str, float], str]: A tuple containing a dictionary mapping each candidate name to the percentage
+            of votes received, and the winning candidate.
         """
         self.load_candidates()
         self.load_voters()
-        self._calculate_vote_percentages()
-        self._find_winner()
+        return self._run_ranked_voting()
