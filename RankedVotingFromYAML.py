@@ -1,59 +1,89 @@
 import RankedVoting
+import os
 import yaml
-from typing import Dict, Tuple, List
 
 class RankedVotingFromYAML(RankedVoting):
-    def __init__(self, candidates_file: str, voter_files: List[str], show_intermediate: bool = False):
+    """
+    A class for conducting ranked voting calculations based on voter preferences provided in YAML files.
+
+    Attributes:
+        main_folder (str): Path to the main folder containing candidate.yaml and voter YAML files.
+        candidates (List[str]): List of candidate names.
+        voters (Dict[str, Dict[str, int]]): Dictionary of voters and their preferences in the format {voter_name: {candidate_name: rank}}.
+        show_intermediate (bool): Flag to determine whether to display intermediate results during the ranked voting process.
+    
+    Methods:
+        __init__(self, main_folder: str, show_intermediate: bool = False):
+            Constructs a RankedVotingFromYAML instance.
+
+        load_candidates(self) -> None:
+            Loads the candidate names from the candidates.yaml file.
+
+        load_voters(self) -> None:
+            Loads the voter preferences from the voter YAML files.
+
+        run_ranked_voting(self) -> None:
+            Executes the ranked voting process using voter preferences and determines the winner.
+
+    """
+
+    def __init__(self, main_folder: str, show_intermediate: bool = False):
         """
-        Initialize the RankedVotingFromYAML instance.
+        Constructs a RankedVotingFromYAML instance.
 
         Args:
-            candidates_file (str): Path to the YAML file containing the names of the candidates.
-            voter_files (List[str]): List of paths to the YAML files containing the voters' preferences.
-            show_intermediate (bool, optional): If True, display intermediate results. Defaults to False.
+            main_folder (str): Path to the main folder containing candidate.yaml and voter YAML files.
+            show_intermediate (bool, optional): Flag to determine whether to display intermediate results during the ranked voting process. Default is False.
+
+        Returns:
+            None
         """
         super().__init__(show_intermediate)
-        self.candidates_file = candidates_file
-        self.voter_files = voter_files
+        self.main_folder = main_folder
 
     def load_candidates(self) -> None:
         """
-        Load the candidates' names from the YAML file.
-        """
-        with open(self.candidates_file, 'r') as file:
-            self.candidates = yaml.safe_load(file)
-            
-    def load_voters(self, remove_candidate_is_dont_care: bool = True) -> None:
-        """
-        Load voters' preferences from the YAML files.
+        Loads the candidate names from the candidates.yaml file.
 
         Args:
-            remove_candidate_is_dont_care (bool, optional): If True, treat the removal of a candidate as a "don't care" value.
-                If False, treat the removal as a strict preference against the candidate. Defaults to True.
-        """
-        candidate_set = set(self.candidates)
-        for file in self.voter_files:
-            with open(file, 'r') as voter_file:
-                voter_data = yaml.safe_load(voter_file)
-                voter_name = voter_data.pop('Voter')
-                preferences = {}
-                for candidate, rank in voter_data.items():
-                    if candidate in candidate_set:
-                        preferences[candidate] = rank
-                    elif not remove_candidate_is_dont_care:
-                        # If the candidate is removed and remove_candidate_is_dont_care is False,
-                        # treat it as a strict preference against the candidate (do not include in preferences).
-                        self.vote_counts[candidate] += 1
-                self.voters[voter_name] = preferences
-
-    def run_ranked_voting(self) -> Tuple[Dict[str, float], str]:
-        """
-        Run the ranked voting calculations using preferences from YAML files.
+            None
 
         Returns:
-            Tuple[Dict[str, float], str]: A tuple containing a dictionary mapping each candidate name to the percentage
-            of votes received, and the winning candidate.
+            None
+        """
+        candidates_file = os.path.join(self.main_folder, "candidates.yaml")
+        with open(candidates_file, "r") as file:
+            self.candidates = yaml.safe_load(file)
+
+    def load_voters(self) -> None:
+        """
+        Loads the voter preferences from the voter YAML files.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        voter_files = [file for file in os.listdir(self.main_folder) if file.startswith("voter") and file.endswith(".yaml")]
+        for voter_file in voter_files:
+            voter_path = os.path.join(self.main_folder, voter_file)
+            with open(voter_path, "r") as file:
+                voter_data = yaml.safe_load(file)
+                voter_name = voter_data[0]["Voter"]
+                self.voters[voter_name] = voter_data[0]
+
+    def run_ranked_voting(self) -> None:
+        """
+        Executes the ranked voting process using voter preferences and determines the winner.
+
+        Args:
+            None
+
+        Returns:
+            None
         """
         self.load_candidates()
         self.load_voters()
-        super().run_ranked_voting()
+        self._calculate_vote_percentages()
+        self._find_winner()
