@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict
+from typing import Tuple, List, Dict
 from tabulate import tabulate
 
 class RankedVoting:
@@ -25,6 +25,9 @@ class RankedVoting:
 
         _find_winner(self) -> str:
             Find the winner of the ranked voting.
+
+        _run_ranked_voting(self) -> Tuple[Dict[str, float], str]:
+            Run the ranked voting calculations and determine the winner.
 
         display_intermediate_results(self, percentages: Dict[str, float]) -> None:
             Displays intermediate voting results.
@@ -97,6 +100,18 @@ class RankedVoting:
             self._redistribute_votes(least_voted_candidate)
 
         return max(self.vote_percentages, key=self.vote_percentages.get)
+
+    def _run_ranked_voting(self) -> Tuple[Dict[str, float], str]:
+        """
+        Run the ranked voting calculations and determine the winner.
+
+        Returns:
+            Tuple[Dict[str, float], str]: A tuple containing a dictionary mapping each candidate name to the percentage
+            of votes received and the winning candidate.
+        """
+        self._calculate_vote_percentages()
+        winner = self._find_winner()
+        return self.vote_percentages, winner
 
     def display_intermediate_results(self, percentages: Dict[str, float]) -> None:
         """
