@@ -1,10 +1,37 @@
-
 import numpy as np
-from typing import Dict
-from collections import defaultdict
+from typing import List, Dict
 from tabulate import tabulate
 
 class RankedVoting:
+    """
+    A class representing a Ranked Voting system.
+
+    Attributes:
+        show_intermediate (bool): If True, display intermediate results. Defaults to False.
+        candidates (List[str]): List of candidate names.
+        voters (Dict[str, Dict[str, int]]): Dictionary of voters and their preferences in the format {voter_name: {candidate_name: rank}}.
+        vote_percentages (Dict[str, float]): Dictionary of candidates and their respective vote percentages.
+        vote_counts (Dict[str, int]): Dictionary of candidates and their total vote counts.
+
+    Methods:
+        _calculate_vote_percentages(self) -> None:
+            Calculate the percentages of votes received by each candidate using NumPy.
+
+        _is_winner_found(self) -> bool:
+            Check if a winner has been found (i.e., any candidate has more than 50% of the votes).
+
+        _redistribute_votes(self, least_voted_candidate: str) -> None:
+            Redistribute votes from the candidate with the least votes to all candidates with equal ranks.
+
+        _find_winner(self) -> str:
+            Find the winner of the ranked voting.
+
+        display_intermediate_results(self, percentages: Dict[str, float]) -> None:
+            Displays intermediate voting results.
+
+        display_final_results(self, percentages: Dict[str, float]) -> None:
+            Displays final voting results and highlights the winning candidate.
+    """
     def __init__(self, show_intermediate: bool = False):
         """
         Initialize the RankedVoting instance.
@@ -13,18 +40,12 @@ class RankedVoting:
             show_intermediate (bool, optional): If True, display intermediate results. Defaults to False.
         """
         self.show_intermediate = show_intermediate
-        self.candidates = []
-        self.voters = {}
-        self.vote_percentages = {}
-        self.vote_counts = defaultdict(int)
+        self.candidates: List[str] = []
+        self.voters: Dict[str, Dict[str, int]] = {}
+        self.vote_percentages: Dict[str, float] = {}
+        self.vote_counts: Dict[str, int] = {}
 
-    def initialize_votes(self) -> None:
-        """
-        Initialize the votes for each candidate.
-        """
-        self.vote_counts = defaultdict(int)
-
-    def calculate_vote_percentages(self) -> None:
+    def _calculate_vote_percentages(self) -> None:
         """
         Calculate the percentages of votes received by each candidate using NumPy.
 
@@ -35,7 +56,7 @@ class RankedVoting:
         votes_arr = np.array(list(self.vote_counts.values()))
         self.vote_percentages = dict(zip(candidates_arr, (votes_arr / total_votes) * 100 if total_votes > 0 else 0))
 
-    def is_winner_found(self) -> bool:
+    def _is_winner_found(self) -> bool:
         """
         Check if a winner has been found (i.e., any candidate has more than 50% of the votes).
 
@@ -44,18 +65,9 @@ class RankedVoting:
         """
         return any(percentage > 50.0 for percentage in self.vote_percentages.values())
 
-    def get_least_voted_candidate(self) -> str:
+    def _redistribute_votes(self, least_voted_candidate: str) -> None:
         """
-        Get the candidate with the least votes.
-
-        Returns:
-            str: The name of the candidate with the least votes.
-        """
-        return min(self.vote_counts, key=self.vote_counts.get)
-
-    def redistribute_votes(self, least_voted_candidate: str) -> None:
-        """
-        Redistribute votes from the candidate with the least votes to the other candidates based on preferences.
+        Redistribute votes from the candidate with the least votes to all candidates with equal ranks.
 
         Args:
             least_voted_candidate (str): The name of the candidate with the least votes.
@@ -63,10 +75,28 @@ class RankedVoting:
         for voter, preferences in self.voters.items():
             least_voted_rank = preferences.get(least_voted_candidate)
             if least_voted_rank is not None and least_voted_rank in self.candidates:
-                least_voted_candidate = least_voted_rank
-            else:
-                least_voted_candidate = next(iter(preferences))
-            self.vote_counts[least_voted_candidate] += 1
+                # Get all candidates with equal ranks
+                equal_ranks_candidates = [candidate for candidate, rank in preferences.items() if rank == least_voted_rank]
+
+                # Calculate the number of votes to redistribute equally among candidates with equal ranks
+                votes_to_redistribute = 1 / len(equal_ranks_candidates)
+
+                # Redistribute votes to all candidates with equal ranks
+                for candidate in equal_ranks_candidates:
+                    self.vote_counts[candidate] += votes_to_redistribute
+
+    def _find_winner(self) -> str:
+        """
+        Find the winner of the ranked voting.
+
+        Returns:
+            str: The name of the winning candidate.
+        """
+        while not self._is_winner_found():
+            least_voted_candidate = self._get_least_voted_candidate()
+            self._redistribute_votes(least_voted_candidate)
+
+        return max(self.vote_percentages, key=self.vote_percentages.get)
 
     def display_intermediate_results(self, percentages: Dict[str, float]) -> None:
         """
