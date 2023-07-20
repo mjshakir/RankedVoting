@@ -1,5 +1,9 @@
 import argparse
 import os
+import sys
+ 
+# setting path
+sys.path.append('../RankedVoting')
 
 def main(args: argparse.Namespace) -> None:
     """
