@@ -51,4 +51,3 @@ class RankedVotingFromCSV(RankedVoting):
         self.load_voters()
         self._calculate_vote_percentages()
         self._find_winner()
-
