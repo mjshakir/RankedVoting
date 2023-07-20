@@ -49,5 +49,6 @@ class RankedVotingFromCSV(RankedVoting):
         """
         self.load_candidates()
         self.load_voters()
-        super().run_ranked_voting()
+        self._calculate_vote_percentages()
+        self._find_winner()
 
