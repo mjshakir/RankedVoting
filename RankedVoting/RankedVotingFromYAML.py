@@ -1,7 +1,8 @@
-import RankedVoting
+from RankedVoting import RankedVoting
 import os
 import yaml
 from typing import Tuple, List, Dict
+
 
 class RankedVotingFromYAML(RankedVoting):
     """
@@ -66,7 +67,8 @@ class RankedVotingFromYAML(RankedVoting):
         Returns:
             None
         """
-        voter_files = [file for file in os.listdir(self.main_folder) if file.startswith("voter") and file.endswith(".yaml")]
+        voter_files = [file for file in os.listdir(self.main_folder) if
+                       file.startswith("voter") and file.endswith(".yaml")]
         for voter_file in voter_files:
             voter_path = os.path.join(self.main_folder, voter_file)
             with open(voter_path, "r") as file:
