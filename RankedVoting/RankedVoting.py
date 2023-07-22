@@ -120,13 +120,19 @@ class RankedVoting:
                 del self.voters[voter][candidate]
 
     def redistribute_votes(self, candidates_to_remove: List[str]) -> None:
-        """Redistribute votes from the least voted candidates until a winner is found or all candidates are removed."""
-
         while candidates_to_remove:
             candidate_to_remove = candidates_to_remove.pop(0)
             if candidate_to_remove in self.candidates:
                 del self.candidates[candidate_to_remove]
-                self.remove_candidate(candidate_to_remove)
+                # instead of simply removing the candidate, redistribute their votes
+                for voter, preferences in self.voters.items():
+                    if preferences.get(candidate_to_remove) is not None:
+                        del preferences[candidate_to_remove]
+                        # sort the preferences based on ranking after deleting
+                        preferences = dict(sorted(preferences.items(), key=lambda item: item[1]))
+                        # increment vote count for the new top preferred candidate
+                        top_preference = next(iter(preferences))
+                        self.candidates[top_preference] += 1
 
             # Recalculate the vote counts
             self.candidates = self.calculate_vote_counts()
@@ -145,6 +151,7 @@ class RankedVoting:
             # Update the percentage movement
             vote_percentages = self.calculate_vote_percentages(self.candidates)
             self.percentage_movement.append(vote_percentages)
+
 
 
 
