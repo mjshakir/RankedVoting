@@ -30,20 +30,35 @@ class RankedVoting:
         return self.candidates[candidate_name] / total_votes * 100
 
     def calculate_vote_counts(self) -> Dict[str, int]:
-        # Initialize a dictionary to count the votes for each candidate
         vote_counts = {candidate: 0 for candidate in self.candidates}
 
-        # For each voter, find their top preference and increment the vote count for that candidate
         for voter_preferences in self.voters.values():
-            # Filter out candidates with a preference of 0 or non-unique preference
-            non_zero_unique_preferences = {candidate: preference for candidate, preference in voter_preferences.items()
-                                        if preference != 0 and list(voter_preferences.values()).count(preference) == 1}
+            # Sanitize preferences
+            sanitized_preferences = {}
+            for candidate, preference in voter_preferences.items():
+                if isinstance(preference, int):
+                    sanitized_preferences[candidate] = preference
+                else:
+                    sanitized_preferences[candidate] = 0  # Treat non-integer preferences as 0
 
-            if non_zero_unique_preferences:  # Check that there are non-zero unique preferences
-                top_preference = min(non_zero_unique_preferences, key=non_zero_unique_preferences.get)
+            # Count number of occurrences for each preference
+            preference_counts = {}
+            for preference in sanitized_preferences.values():
+                if preference in preference_counts:
+                    preference_counts[preference] += 1
+                else:
+                    preference_counts[preference] = 1
+
+            # Filter out candidates with a preference of 0 or non-unique preference
+            unique_preferences = {candidate: preference for candidate, preference in sanitized_preferences.items()
+                                if preference != 0 and preference_counts[preference] == 1}
+
+            if unique_preferences:
+                top_preference = min(unique_preferences, key=unique_preferences.get)
                 vote_counts[top_preference] += 1
 
         return vote_counts
+
 
     def calculate_vote_percentages(self, local_candidates):
         total_votes = np.sum(list(local_candidates.values()))
