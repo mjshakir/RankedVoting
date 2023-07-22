@@ -1,5 +1,6 @@
 from typing import Dict, List
 import tabulate
+import numpy as np
 
 
 class RankedVoting:
@@ -23,10 +24,7 @@ class RankedVoting:
             self.candidates[candidate] = 0
 
     def get_candidate_percentage(self, candidate_name: str) -> float:
-        """
-        Get the percentage of votes for a specific candidate.
-        """
-        total_votes = sum(self.candidates.values())
+        total_votes = np.sum(list(self.candidates.values()))
         if total_votes == 0:
             return 0.0
         return self.candidates[candidate_name] / total_votes * 100
@@ -48,19 +46,18 @@ class RankedVoting:
         return vote_counts
 
     def calculate_vote_percentages(self, local_candidates):
-        total_votes = sum(local_candidates.values())
+        total_votes = np.sum(list(local_candidates.values()))
         vote_percentages = {candidate: (votes/total_votes) * 100 for candidate, votes in local_candidates.items()}
         return vote_percentages
 
 
     def _get_winner(self) -> str:
         vote_counts = self.calculate_vote_counts()
-        total_votes = sum(vote_counts.values())
+        total_votes = np.sum(list(vote_counts.values()))
         for candidate, votes in vote_counts.items():
-            if votes / total_votes > 0.5:
+            if np.divide(votes, total_votes) > 0.5:
                 return candidate
         return ""
-
 
     def add_vote(self, ranked_preferences: Dict[str, int]) -> None:
         if not ranked_preferences or not isinstance(ranked_preferences, dict):
@@ -216,4 +213,3 @@ class RankedVoting:
 
         # Show percentage movement
         self.show_percentage_movement()
-
