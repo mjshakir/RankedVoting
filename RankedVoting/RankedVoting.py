@@ -140,13 +140,10 @@ class RankedVoting:
             # Check if a winner is found
             winner = self._get_winner()
             if winner:
-                print(f"\n\nThe winner is {winner} with {self.candidates[winner]} votes!")
                 break
 
             # If no winner, remove the next least voted candidates
             candidates_to_remove = self.find_candidates_with_least_votes()
-            if not candidates_to_remove:
-                print("\n\nNo candidate reached 50% of the votes. A runoff election may be needed.")
 
             # Update the percentage movement
             vote_percentages = self.calculate_vote_percentages(self.candidates)
@@ -163,32 +160,52 @@ class RankedVoting:
 
     def show_initial_percentages(self) -> str:
         table_data = []
-        headers = ['Candidate', 'Initial Percentage']
+        headers = ['Candidate', 'Initial Votes', 'Initial Percentage']
         total_votes = len(self.voters)  # each voter has one vote
 
         vote_counts = self.calculate_vote_counts()
 
         for candidate, votes in vote_counts.items():
             percentage = votes / total_votes * 100 if total_votes > 0 else 0
-            row = [candidate, f"{percentage:.2f}%"]
+            row = [candidate, votes, f"{percentage:.2f}%"]
             table_data.append(row)
 
-        return tabulate.tabulate(table_data, headers=headers)
+        # Sort the table data by votes in descending order
+        table_data.sort(key=lambda x: x[1], reverse=True)
 
-
+        print("\nInitial vote counts and percentages for each candidate:")
+        print("----------------------------------------------------------")
+        return tabulate.tabulate(table_data, headers=headers, tablefmt="grid")
 
     def show_percentage_movement(self):
-        headers = ['Round'] + list(self.candidates.keys())
+        headers = ['Round', 'Dropped Candidate', 'Remaining Candidates', 'Votes', 'Percentage']
         table_data = []
 
-        for i, percentages in enumerate(self.percentage_movement):
-            row = [f"Round {i + 1}"]
-            for candidate in self.candidates.keys():
-                row.append(f"{percentages[candidate]:.2f}%")
-            table_data.append(row)
+        dropped_candidates = []
 
-        print("Percentage Movement:")
-        print(tabulate.tabulate(table_data, headers=headers))
+        for i, percentages in enumerate(self.percentage_movement):
+            vote_counts = self.calculate_vote_counts()
+
+            # Find the candidates dropped in this round
+            current_candidates = set(self.candidates.keys())
+            dropped_in_this_round = [candidate for candidate in dropped_candidates if candidate not in current_candidates]
+            dropped_candidates.extend(dropped_in_this_round)
+
+            for candidate in self.candidates.keys():
+                if candidate in dropped_in_this_round:
+                    row = [f"Round {i + 1}", candidate, "Dropped", "-", "-"]
+                else:
+                    row = [f"Round {i + 1}", "", candidate, vote_counts[candidate], f"{percentages[candidate]:.2f}%"]
+                table_data.append(row)
+
+        # Sort the table data by round and votes in descending order
+        table_data.sort(key=lambda x: (x[0], -x[3] if x[3] != "-" else 0))
+
+        print("\nVote counts and percentages movement for each candidate by round:")
+        print("----------------------------------------------------------------------")
+        print(tabulate.tabulate(table_data, headers=headers, tablefmt="grid"))
+
+
 
     def show_final_result(self, winner=None):
         table_data = []
@@ -219,7 +236,7 @@ class RankedVoting:
             # Check if we have a winner
             winner = self._get_winner()
             if winner:
-                print(f"The winner is {winner}!")
+                print(f"\n\nThe winner is {winner} with {self.candidates[winner]} votes!")
                 break
 
             # Find least voted candidate(s) and remove them
@@ -230,7 +247,7 @@ class RankedVoting:
             # Check if we have a winner after redistribution
             winner = self._get_winner()
             if winner:
-                print(f"The winner is {winner}!")
+                print(f"\n\nThe winner is {winner} with {self.candidates[winner]} votes!")
                 break
 
         # Show percentage movement
