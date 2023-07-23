@@ -1,127 +1,103 @@
-# Ranked Voting Script
+# Ranked Voting System
 
-The Ranked Voting script is designed to perform ranked voting calculations based on a CSV file containing voter preferences for different candidates. This script implements the Ranked Choice Voting (RCV) or Alternative Vote (AV) method, where voters rank candidates in order of preference.
+The Ranked Voting System is a method for conducting elections where voters rank candidates in order of preference. This system allows voters to express their preferences more accurately, and it helps in electing candidates who have broader support.
 
-## Requirements
+## Getting Started
 
-Before using the Ranked Voting script, make sure you have the following installed:
+### Requirements
 
-- Python 3
+- Python 3.8+
+- pandas
+- PyYAML
 
-Additionally, you'll need the following Python libraries, which can be installed via pip:
-
-- argparse
-- tabulate
-- collections
-
-To install the required libraries, run the following command:
+To install the requirements, use the provided `install.sh` (for Unix-based systems) or `install.bat` (for Windows) scripts, or manually install the dependencies using pip:
 
 ```bash
-pip install argparse tabulate
+pip install -r requirements.txt
 ```
 
-## Input Format
+## Usage
 
-The input for the Ranked Voting script is a CSV (Comma-Separated Values) file. The CSV file must follow the following format:
+To run the Ranked Voting System, execute the main Python script, providing the path to the main folder containing the input files (CSV or YAML) as a command-line argument. The script will conduct the ranked voting process and display the final results.
 
-- The first row contains the names of the candidates.
-- The first column contains the names or identifiers of the voters.
-- The remaining cells contain the ranking preferences of each voter for the candidates. The ranking should be represented using integers, where 1 indicates the first choice, 2 indicates the second choice, and so on.
+### Running the Code
+To run the code, use the following command:
+
+```bash
+python main.py <input_file> --display_interim <True/False> --interim_filename <interim_filename> --final_filename <final_filename>
+```
+where:
+- <input_file> is the path to the input file in either YAML or CSV format.
+- <True/False> is a Boolean indicating whether to display interim step results. The default is False.
+- <interim_filename> is the filename for saving interim step results. The default is "interim_results.json".
+- <final_filename> is the filename for saving final results. The default is "final_results.json".
+
+#### Example
+```bash
+python main.py Example/yaml/example.yaml --display_interim True --interim_filename interim.json --final_filename final.json
+```
+
+## Expected Formats
+
+### CSV Format
+
+- The CSV file should contain the candidates' names in the first row and the voters' names in the first column.
+- The cells in the middle represent the rank given by each voter to each candidate.
+- An empty cell represents that the voter did not rank that particular candidate.
+- If a voter ranked multiple candidates with the same rank, the values can be repeated in the corresponding cells.
 
 Example CSV file:
 
-
-```
-Voter,Candidate1,Candidate2,Candidate3
-Voter1,1,2,3
-Voter2,2,1,3
-Voter3,3,2,1
-Voter4,1,2,3
-Voter5,2,1,3
-Voter6,3,2,1
-```
-
-
-In the above example, three candidates (Candidate1, Candidate2, and Candidate3) are ranked by six voters (Voter1, Voter2, ..., Voter6). Each voter provides their preferences by assigning integers 1, 2, or 3 to the candidates.
-
-**Note:** The script automatically handles invalid or missing preferences, treating them as "don't care" or abstentions.
-
-## How to Use
-
-To use the Ranked Voting script, follow these steps:
-
-1. Save your ranked voting data in a CSV file following the input format described above.
-
-2. Open a terminal or command prompt.
-
-3. Run the script with the path to the CSV file as the first argument. Optionally, you can add the `--show-intermediate` flag to display intermediate results after each round of vote redistribution.
-
-Command to run the script:
-
-```Python
-python main.py path_to_your_csv_file --show-intermediate
+```cvs
+| Voter    | Candidate A | Candidate B | Candidate C |
+|----------|-------------|-------------|-------------|
+| Voter 1  | 1           | 2           |  3          |
+|----------|-------------|-------------|-------------|
+| Voter 2  |             | 2           |  1          |
+|----------|-------------|-------------|-------------|
+| Voter 3  | 1           |             |             |
+|----------|-------------|-------------|-------------|
+| Voter 4  | 3           | 1           |  2          |
+|----------|-------------|-------------|-------------|
 ```
 
+### YAML Format
 
-Replace `main.py` with the actual name of the Python script file containing the `main()` function and `RankedVoting` class.
+- The main folder should contain a `candidates.yaml` file and one YAML file for each voter, e.g., `voter1.yaml`, `voter2.yaml`, etc.
+- The `candidates.yaml` file should contain a list of candidate names.
+- Each voter YAML file should contain a list of dictionaries, where each dictionary represents the voter's preferences.
+- Each dictionary should have a `"Voter"` key with the voter's name and other keys representing the candidate names with corresponding ranks.
+- An empty value or absence of a rank for a candidate means that the voter did not rank that particular candidate.
 
-## Example
+Example candidates.yaml:
 
-Let's run the script with the example CSV file provided earlier:
-
-**CSV File (example_votes.csv):**
-
+```yaml
+- Candidate A
+- Candidate B
+- Candidate C
 ```
-Voter,Candidate1,Candidate2,Candidate3
-Voter1,1,2,3
-Voter2,2,1,3
-Voter3,3,2,1
-Voter4,1,2,3
-Voter5,2,1,3
-Voter6,3,2,1
+Example voter1.yaml:
+```yaml
+- Voter: Voter 1
+  Candidate A: 1
+  Candidate B: 3
+  Candidate C: 2
 ```
-
-
-**Command:**
-
-```Python
-python main.py path_to_your_csv_file --show-intermediate
+Example voter2.yaml:
+```yaml
+- Voter: Voter 2
+  Candidate B: 2
+  Candidate C: 1
 ```
-
-
-**Output:**
+Example voter3.yaml:
+```yaml
+- Voter: Voter 3
+  Candidate A: 1
 ```
-Intermediate Results:
-+-----------+------------+
-| Candidate | Percentage |
-+-----------+------------+
-| Candidate1| 33.33%     |
-| Candidate2| 33.33%     |
-| Candidate3| 33.33%     |
-+-----------+------------+
-
-Intermediate Results:
-+-----------+------------+
-| Candidate | Percentage |
-+-----------+------------+
-| Candidate1| 44.44%     |
-| Candidate2| 22.22%     |
-| Candidate3| 33.33%     |
-+-----------+------------+
-
-Candidate   Percentage  Winner
------------  -----------  --------
-Candidate1  44.44%       *
-Candidate2  22.22%
-Candidate3  33.33%
+Example voter4.yaml:
+```yaml
+- Voter: Voter 4
+  Candidate A: 3
+  Candidate B: 1
+  Candidate C: 2
 ```
-
-
-The script will display the intermediate results after each round of vote redistribution if `--show-intermediate` is specified. Otherwise, it will display only the final results with the winning candidate highlighted.
-
----
-
-To use the script, simply copy the contents of the `ranked_voting.py` and `main.py` files, and save them in their respective files in the same directory. Then, follow the usage instructions provided in the document.
-
-Now, you have both the updated Markdown document and the Markdown source code. You can copy the source code and use it directly in your project or documentation.
-

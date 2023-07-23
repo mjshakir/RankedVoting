@@ -1,31 +1,40 @@
+import os
 import argparse
-from ranked_voting import RankedVoting
-from typing import Dict, Tuple, Optional
+from RankedVoting import RankedVotingFromYAML, RankedVotingFromCSV
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description='Ranked Voting')
-    parser.add_argument('csv_file', help='Path to the CSV file (without the .csv extension) containing the ranked voting data')
-    parser.add_argument('--show-intermediate', action='store_true', help='Show intermediate results after each round of vote redistribution')
+
+def main():
+    parser = argparse.ArgumentParser(description='Run a ranked voting system.')
+    parser.add_argument('input_file', help='Path to the input file in either YAML or CSV format')
+    parser.add_argument('--display_interim', default=False, action=argparse.BooleanOptionalAction,
+                        help='Whether to display interim step results. Default is False.')
+    parser.add_argument('--interim_filename', default='interim_results.csv',
+                        help='The filename for saving interim step results. Default is "interim_results.json".')
+    parser.add_argument('--final_filename', default='final_results.json',
+                        help='The filename for saving final results. Default is "final_results.json".')
+
     args = parser.parse_args()
 
-    filename: str = args.csv_file
-    if not filename.endswith('.csv'):  # Check if the user provided .csv extension; if not, raise an error
-        print("Error: The file must be in .csv format.")
-        exit(1)
+    if args.input_file.endswith('.yaml') or os.path.isdir(args.input_file):
+        ranked_voting = RankedVotingFromYAML(args.input_file)
+    elif args.input_file.endswith('.csv'):
+        ranked_voting = RankedVotingFromCSV(args.input_file)
+    else:
+        raise ValueError('Unsupported file format. Please provide a YAML or CSV file.')
 
-    show_intermediate: bool = args.show_intermediate
+    ranked_voting.run_vote()
 
-    ranked_voting = RankedVoting(filename, show_intermediate)
-    percentages, _ = ranked_voting.run_ranked_voting()
+    # Display interim results if the argument is provided
+    if args.display_interim:
+        ranked_voting.display_interim_results()
 
-    if show_intermediate:
-        ranked_voting.display_intermediate_results(percentages)
+    # Save interim results
+    ranked_voting.save_results_to_csv(args.interim_filename)
 
-    ranked_voting.display_final_results(percentages)
+    # Save final results
+    ranked_voting.save_input_and_final_results(args.final_filename)
 
-    # If you don't need the percentages and winner in the main script,
-    # you can ignore the return values as follows:
-    # ranked_voting.run_ranked_voting()
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()
