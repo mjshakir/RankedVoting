@@ -1,89 +1,55 @@
-from RankedVoting import RankedVoting
-import os
+from pathlib import Path
 import yaml
-from typing import Tuple, List, Dict
+from RankedVoting import RankedVoting
 
 
 class RankedVotingFromYAML(RankedVoting):
-    """
-    A class for conducting ranked voting calculations based on voter preferences provided in YAML files.
+    def __init__(self, main_folder, candidates_file="candidates.yaml"):
+        self.main_folder = Path(main_folder)
+        self.candidates_file = self.main_folder / candidates_file
+        self.voters_folder = self.main_folder / "voters"
+        if not self.candidates_file.is_file() or not self.voters_folder.is_dir():
+            raise FileNotFoundError(
+                "Cannot find candidates file or voters folder. "
+                "Please make sure your folder structure is as follows: \n"
+                "main_folder\n"
+                "├── candidates_file.yaml\n"
+                "└── voters\n"
+                "    ├── voter1.yaml\n"
+                "    ├── voter2.yaml\n"
+                "    └── ..."
+            )
+        self.candidates = self.load_candidates()
+        self.voters = self.load_voters()
+        super().__init__(self.candidates, self.voters)
 
-    Attributes:
-        main_folder (str): Path to the main folder containing candidate.yaml and voter YAML files.
-        candidates (List[str]): List of candidate names.
-        voters (Dict[str, Dict[str, int]]): Dictionary of voters and their preferences in the format {voter_name: {candidate_name: rank}}.
-        show_intermediate (bool): Flag to determine whether to display intermediate results during the ranked voting process.
-    
-    Methods:
-        __init__(self, main_folder: str, show_intermediate: bool = False):
-            Constructs a RankedVotingFromYAML instance.
+    def load_candidates(self):
+        with open(self.candidates_file, 'r') as file:
+            candidates = yaml.safe_load(file)
+        return {candidate: 0 for candidate in candidates}
 
-        load_candidates(self) -> None:
-            Loads the candidate names from the candidates.yaml file.
+    def _sanitize_rank(self, preferences):
+        number_of_candidates = len(self.candidates)
+        sanitized = {}
+        for candidate, rank in preferences.items():
+            if not isinstance(rank, (int, float)) or rank < 1 or rank > number_of_candidates:
+                sanitized[candidate] = 0
+            else:
+                sanitized[candidate] = round(rank)
+        return sanitized
 
-        load_voters(self) -> None:
-            Loads the voter preferences from the voter YAML files.
-
-        run_ranked_voting(self) -> None:
-            Executes the ranked voting process using voter preferences and determines the winner.
-
-    """
-
-    def __init__(self, main_folder: str, show_intermediate: bool = False):
-        """
-        Constructs a RankedVotingFromYAML instance.
-
-        Args:
-            main_folder (str): Path to the main folder containing candidate.yaml and voter YAML files.
-            show_intermediate (bool, optional): Flag to determine whether to display intermediate results during the ranked voting process. Default is False.
-
-        Returns:
-            None
-        """
-        super().__init__(show_intermediate)
-        self.main_folder = main_folder
-
-    def load_candidates(self) -> None:
-        """
-        Loads the candidate names from the candidates.yaml file.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        candidates_file = os.path.join(self.main_folder, "candidates.yaml")
-        with open(candidates_file, "r") as file:
-            self.candidates = yaml.safe_load(file)
-
-    def load_voters(self) -> None:
-        """
-        Loads the voter preferences from the voter YAML files.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        voter_files = [file for file in os.listdir(self.main_folder) if
-                       file.startswith("voter") and file.endswith(".yaml")]
-        for voter_file in voter_files:
-            voter_path = os.path.join(self.main_folder, voter_file)
-            with open(voter_path, "r") as file:
+    def load_voters(self):
+        voters = {}
+        for voter_file in self.voters_folder.iterdir():
+            with open(voter_file, 'r') as file:
                 voter_data = yaml.safe_load(file)
-                voter_name = voter_data[0]["Voter"]
-                self.voters[voter_name] = voter_data[0]
-
-    def run_ranked_voting(self) -> Tuple[Dict[str, float], str]:
-        """
-        Run the ranked voting calculations using preferences from the YAML file.
-
-        Returns:
-            Tuple[Dict[str, float], str]: A tuple containing a dictionary mapping each candidate name to the percentage
-            of votes received, and the winning candidate.
-        """
-        self.load_candidates()
-        self.load_voters()
-        return self._run_ranked_voting()
+                for voter_name, raw_preferences in voter_data.items():
+                    preferences = self._sanitize_rank(raw_preferences)
+                    if voter_name in voters:
+                        if voters[voter_name] == preferences:
+                            print(f"Duplicate voter found: {voter_name}. Counting once.")
+                        else:
+                            print(f"Conflict! Different preferences for same voter ({voter_name}). Ignoring.")
+                            continue
+                    voters[voter_name] = preferences
+        return voters
