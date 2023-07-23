@@ -2,7 +2,6 @@ import pytest
 from RankedVoting import RankedVoting
 
 
-
 @pytest.fixture
 def ranked_voting():
     candidates = ["Candidate 1", "Candidate 2", "Candidate 3", "Candidate 4"]
@@ -14,9 +13,9 @@ def test_redistribute_votes(ranked_voting):
     # Setup
     candidate_to_remove = "Candidate 3"
     ranked_voting.candidates = {
-        "Candidate 1": 0, 
-        "Candidate 2": 0, 
-        "Candidate 3": 0, 
+        "Candidate 1": 0,
+        "Candidate 2": 0,
+        "Candidate 3": 0,
         "Candidate 4": 0
     }
     ranked_voting.voters = {
@@ -33,4 +32,3 @@ def test_redistribute_votes(ranked_voting):
         "Voter 2": {"Candidate 1": 1, "Candidate 2": 2},
         "Voter 3": {"Candidate 2": 2, "Candidate 4": 3}
     }
-

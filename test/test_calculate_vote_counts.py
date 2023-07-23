@@ -2,7 +2,6 @@ import pytest
 from RankedVoting import RankedVoting
 
 
-
 @pytest.fixture
 def ranked_voting():
     candidates = ["Candidate 1", "Candidate 2", "Candidate 3", "Candidate 4"]
@@ -15,13 +14,12 @@ def ranked_voting():
     return RankedVoting(candidates, voters)
 
 
-
 def test_calculate_vote_counts(ranked_voting):
     # Setup
     ranked_voting.candidates = {
-        "Candidate 1": 0, 
-        "Candidate 2": 0, 
-        "Candidate 3": 0, 
+        "Candidate 1": 0,
+        "Candidate 2": 0,
+        "Candidate 3": 0,
         "Candidate 4": 0
     }
     ranked_voting.voters = {
@@ -33,12 +31,11 @@ def test_calculate_vote_counts(ranked_voting):
 
     # Call the method to be tested
     vote_counts = ranked_voting.calculate_vote_counts()
-    
+
     # Check the vote count for each candidate
     assert vote_counts == {
-        "Candidate 1": 1, 
-        "Candidate 2": 1, 
-        "Candidate 3": 1, 
+        "Candidate 1": 1,
+        "Candidate 2": 1,
+        "Candidate 3": 1,
         "Candidate 4": 1
     }
-
