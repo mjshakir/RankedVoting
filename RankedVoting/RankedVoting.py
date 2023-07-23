@@ -1,7 +1,7 @@
 from typing import List, Dict
 import pandas as pd
 import json
-
+from colorama import Fore, Style
 
 class RankedVoting:
     def __init__(self, candidates: List[str], voters_data: Dict[str, Dict[str, int]]):
@@ -35,6 +35,22 @@ class RankedVoting:
             # Check if voter has no more preferences
             if not voter_preferences:
                 voters_to_remove.append(voter)
+            else:
+                # Find the candidate with the next preference
+                next_preference = min(voter_preferences.values())
+                next_candidates = [candidate for candidate, preference in voter_preferences.items() if preference == next_preference]
+
+                # If there is only one candidate with the next preference, assign the vote to that candidate
+                if len(next_candidates) == 1:
+                    candidate_to_assign = next_candidates[0]
+                    self.candidates[candidate_to_assign] += 1
+                else:
+                    # If there are multiple candidates with the same next preference, distribute the vote equally
+                    num_candidates = len(next_candidates)
+                    vote_share = 1 / num_candidates
+                    for candidate in next_candidates:
+                        self.candidates[candidate] += vote_share
+
         # Remove voters with no more preferences
         for voter in voters_to_remove:
             del self.voters[voter]
@@ -87,6 +103,14 @@ class RankedVoting:
             "vote_counts": vote_counts.copy()
         }])
         self.vote_history = pd.concat([self.vote_history, new_row], ignore_index=True)
+
+         # Get the final winner and their total votes
+        final_winner = max(vote_counts, key=vote_counts.get)
+        final_winner_votes = vote_counts[final_winner]
+
+        print("Final Results:")
+        print(Fore.GREEN + '\033[1m' + f"The winner is {final_winner} with {final_winner_votes} votes!" + '\033[0m' + Style.RESET_ALL)
+        print("-------------------------------")
 
     def display_interim_results(self):
         for idx, row in self.vote_history.iterrows():
