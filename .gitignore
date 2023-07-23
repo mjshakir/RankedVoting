@@ -1,5 +1,8 @@
+.pytest_cache
 .DS_Store
+__pycache__
 RankedVoting/__pycache__
+test/__pycache__
 RankedVoting/.DS_Store
 input_and_final_results.json
 voting_results.csv
