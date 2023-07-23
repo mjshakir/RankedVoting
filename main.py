@@ -1,6 +1,6 @@
+import os
 import argparse
-from RankedVoting import RankedVotingFromYAML
-from RankedVoting import RankedVotingFromCSV
+from RankedVoting import RankedVotingFromYAML, RankedVotingFromCSV
 
 
 def main():
@@ -8,14 +8,14 @@ def main():
     parser.add_argument('input_file', help='Path to the input file in either YAML or CSV format')
     parser.add_argument('--display_interim', default=False, action=argparse.BooleanOptionalAction,
                         help='Whether to display interim step results. Default is False.')
-    parser.add_argument('--interim_filename', default='interim_results.json',
+    parser.add_argument('--interim_filename', default='interim_results.csv',
                         help='The filename for saving interim step results. Default is "interim_results.json".')
     parser.add_argument('--final_filename', default='final_results.json',
                         help='The filename for saving final results. Default is "final_results.json".')
 
     args = parser.parse_args()
 
-    if args.input_file.endswith('.yaml'):
+    if args.input_file.endswith('.yaml') or os.path.isdir(args.input_file):
         ranked_voting = RankedVotingFromYAML(args.input_file)
     elif args.input_file.endswith('.csv'):
         ranked_voting = RankedVotingFromCSV(args.input_file)
@@ -33,6 +33,7 @@ def main():
 
     # Save final results
     ranked_voting.save_input_and_final_results(args.final_filename)
+
 
 
 if __name__ == '__main__':
