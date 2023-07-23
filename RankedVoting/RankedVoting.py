@@ -1,143 +1,131 @@
-import numpy as np
-from typing import Tuple, List, Dict
-from tabulate import tabulate
+from typing import List, Dict
+import pandas as pd
+import json
+
 
 class RankedVoting:
-    """
-    A class representing a Ranked Voting system.
+    def __init__(self, candidates: List[str], voters_data: Dict[str, Dict[str, int]]):
+        self.candidates = {candidate: 0 for candidate in candidates}
+        self.voters = voters_data
+        self.vote_history = pd.DataFrame(columns=['round', 'removed', 'vote_counts'])
 
-    Attributes:
-        show_intermediate (bool): If True, display intermediate results. Defaults to False.
-        candidates (List[str]): List of candidate names.
-        voters (Dict[str, Dict[str, int]]): Dictionary of voters and their preferences in the format {voter_name: {candidate_name: rank}}.
-        vote_percentages (Dict[str, float]): Dictionary of candidates and their respective vote percentages.
-        vote_counts (Dict[str, int]): Dictionary of candidates and their total vote counts.
+    def _sanitize_preferences(self, preferences: Dict[str, int]) -> Dict[str, int]:
+        sanitized_preferences = {}
+        max_preference = len(self.candidates)
+        for candidate, preference in preferences.items():
+            # Round float preferences to nearest integer
+            if isinstance(preference, float):
+                preference = round(preference)
+            # Replace preferences that are higher than the number of candidates.yaml with 0
+            if isinstance(preference, int) and preference > max_preference:
+                preference = 0
+            sanitized_preferences[candidate] = preference
 
-    Methods:
-        _calculate_vote_percentages(self) -> None:
-            Calculate the percentages of votes received by each candidate using NumPy.
+        # Remove preferences with 0
+        sanitized_preferences = {candidate: preference for candidate, preference in sanitized_preferences.items() if
+                                 preference != 0}
 
-        _is_winner_found(self) -> bool:
-            Check if a winner has been found (i.e., any candidate has more than 50% of the votes).
+        return sanitized_preferences
 
-        _redistribute_votes(self, least_voted_candidate: str) -> None:
-            Redistribute votes from the candidate with the least votes to all candidates with equal ranks.
+    def redistribute_votes(self, removed_candidate):
+        voters_to_remove = []
+        for voter, voter_preferences in self.voters.items():
+            if removed_candidate in voter_preferences:
+                del voter_preferences[removed_candidate]
+            # Check if voter has no more preferences
+            if not voter_preferences:
+                voters_to_remove.append(voter)
+        # Remove voters with no more preferences
+        for voter in voters_to_remove:
+            del self.voters[voter]
 
-        _find_winner(self) -> str:
-            Find the winner of the ranked voting.
+    def calculate_vote_counts(self):
+        vote_counts = {candidate: 0 for candidate in self.candidates}
 
-        _run_ranked_voting(self) -> Tuple[Dict[str, float], str]:
-            Run the ranked voting calculations and determine the winner.
+        for voter_preferences in self.voters.values():
+            sanitized_preferences = self._sanitize_preferences(voter_preferences)
 
-        display_intermediate_results(self, percentages: Dict[str, float]) -> None:
-            Displays intermediate voting results.
+            if sanitized_preferences:
+                top_preference = min(sanitized_preferences, key=sanitized_preferences.get)
+                vote_counts[top_preference] += 1
 
-        display_final_results(self, percentages: Dict[str, float]) -> None:
-            Displays final voting results and highlights the winning candidate.
-    """
-    def __init__(self, show_intermediate: bool = False):
-        """
-        Initialize the RankedVoting instance.
+        return vote_counts
 
-        Args:
-            show_intermediate (bool, optional): If True, display intermediate results. Defaults to False.
-        """
-        self.show_intermediate = show_intermediate
-        self.candidates: List[str] = []
-        self.voters: Dict[str, Dict[str, int]] = {}
-        self.vote_percentages: Dict[str, float] = {}
-        self.vote_counts: Dict[str, int] = {}
+    def run_vote(self):
+        round_number = 1
+        while len(self.candidates) > 1:
+            vote_counts = self.calculate_vote_counts()
+            new_row = pd.DataFrame([{
+                "round": round_number,
+                "removed": [],
+                "vote_counts": vote_counts.copy()
+            }])
+            self.vote_history = pd.concat([self.vote_history, new_row], ignore_index=True)
 
-    def _calculate_vote_percentages(self) -> None:
-        """
-        Calculate the percentages of votes received by each candidate using NumPy.
+            min_votes = min(vote_counts.values())
+            max_votes = max(vote_counts.values())
 
-        Note: NumPy optimizations are relevant for large voter numbers.
-        """
-        total_votes = sum(self.vote_counts.values())
-        candidates_arr = np.array(self.candidates)
-        votes_arr = np.array(list(self.vote_counts.values()))
-        self.vote_percentages = dict(zip(candidates_arr, (votes_arr / total_votes) * 100 if total_votes > 0 else 0))
+            # If all remaining candidates.yaml have equal votes, all of them are considered winners.
+            if min_votes == max_votes:
+                print("All remaining candidates.yaml have equal votes. They are all considered winners.")
+                break
 
-    def _is_winner_found(self) -> bool:
-        """
-        Check if a winner has been found (i.e., any candidate has more than 50% of the votes).
+            min_vote_candidates = [candidate for candidate, votes in vote_counts.items() if votes == min_votes]
 
-        Returns:
-            bool: True if a winner is found, False otherwise.
-        """
-        return any(percentage > 50.0 for percentage in self.vote_percentages.values())
+            for min_vote_candidate in min_vote_candidates:
+                del self.candidates[min_vote_candidate]
+                self.redistribute_votes(min_vote_candidate)
 
-    def _redistribute_votes(self, least_voted_candidate: str) -> None:
-        """
-        Redistribute votes from the candidate with the least votes to all candidates with equal ranks.
+            self.vote_history.at[round_number - 1, "removed"] = min_vote_candidates
+            round_number += 1
 
-        Args:
-            least_voted_candidate (str): The name of the candidate with the least votes.
-        """
-        for voter, preferences in self.voters.items():
-            least_voted_rank = preferences.get(least_voted_candidate)
-            if least_voted_rank is not None and least_voted_rank in self.candidates:
-                # Get all candidates with equal ranks
-                equal_ranks_candidates = [candidate for candidate, rank in preferences.items() if rank == least_voted_rank]
+        # Last round where only one candidate remains
+        vote_counts = self.calculate_vote_counts()
+        new_row = pd.DataFrame([{
+            "round": round_number,
+            "removed": [],
+            "vote_counts": vote_counts.copy()
+        }])
+        self.vote_history = pd.concat([self.vote_history, new_row], ignore_index=True)
 
-                # Calculate the number of votes to redistribute equally among candidates with equal ranks
-                votes_to_redistribute = 1 / len(equal_ranks_candidates)
+    def display_interim_results(self):
+        for idx, row in self.vote_history.iterrows():
+            print(f"Round {row['round']} Results:")
+            print("Vote counts:")
+            print(row["vote_counts"])
+            total_votes = sum(row["vote_counts"].values())
+            if total_votes == 0:
+                print("No votes cast.")
+                continue
+            print("Vote percentages:")
+            vote_percentages = {candidate: (votes / total_votes) * 100 for candidate, votes in
+                                row["vote_counts"].items()}
+            print(vote_percentages)
+            print("Removed: ", row["removed"])
+            print("---------------------------")
 
-                # Redistribute votes to all candidates with equal ranks
-                for candidate in equal_ranks_candidates:
-                    self.vote_counts[candidate] += votes_to_redistribute
+    def save_results_to_csv(self, output_path):
+        try:
+            self.vote_history.to_csv(output_path)
+        except Exception as e:
+            print("Error saving to CSV:", str(e))
 
-    def _find_winner(self) -> str:
-        """
-        Find the winner of the ranked voting.
+    def save_input_and_final_results(self, output_path):
+        # Get the final result
+        final_result = self.vote_history.loc[self.vote_history.index[-1], 'vote_counts']
+        total_votes = sum(final_result.values())
+        final_result_percent = {k: (v / total_votes * 100) for k, v in final_result.items()}
 
-        Returns:
-            str: The name of the winning candidate.
-        """
-        while not self._is_winner_found():
-            least_voted_candidate = self._get_least_voted_candidate()
-            self._redistribute_votes(least_voted_candidate)
+        # Prepare data to save
+        data_to_save = {
+            "candidates.yaml": self.candidates,
+            "voters": self.voters,
+            "final_result": final_result,
+            "final_result_percent": final_result_percent
+        }
 
-        return max(self.vote_percentages, key=self.vote_percentages.get)
-
-    def _run_ranked_voting(self) -> Tuple[Dict[str, float], str]:
-        """
-        Run the ranked voting calculations and determine the winner.
-
-        Returns:
-            Tuple[Dict[str, float], str]: A tuple containing a dictionary mapping each candidate name to the percentage
-            of votes received and the winning candidate.
-        """
-        self._calculate_vote_percentages()
-        winner = self._find_winner()
-        return self.vote_percentages, winner
-
-    def display_intermediate_results(self, percentages: Dict[str, float]) -> None:
-        """
-        Displays intermediate voting results.
-
-        Args:
-            percentages (Dict[str, float]): A dictionary mapping each candidate name to the percentage of votes received.
-        """
-        print("Intermediate Results:")
-        headers = ["Candidate", "Percentage"]
-        table_data = [[candidate, f"{percentage:.2f}%"] for candidate, percentage in percentages.items()]
-        print(tabulate(table_data, headers=headers, tablefmt="grid"))
-        print()
-
-    def display_final_results(self, percentages: Dict[str, float]) -> None:
-        """
-        Displays final voting results and highlights the winning candidate.
-
-        Args:
-            percentages (Dict[str, float]): A dictionary mapping each candidate name to the percentage of votes received.
-        """
-        print("Final Results:")
-        headers = ["Candidate", "Percentage", "Winner"]
-        table_data = []
-        winner = max(percentages, key=percentages.get)
-        for candidate, percentage in percentages.items():
-            winner_mark = "*" if candidate == winner else ""
-            table_data.append([candidate, f"{percentage:.2f}%", winner_mark])
-        print(tabulate(table_data, headers=headers, tablefmt="grid"))
+        # Write to a JSON file
+        with open(output_path, 'w') as f:
+            for key, value in data_to_save.items():
+                json.dump({key: value}, f)
+                f.write('\n')

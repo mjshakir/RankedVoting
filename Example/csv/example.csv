@@ -1,5 +1,10 @@
  , Candidate A, Candidate B, Candidate C
 Voter 1,1,2,3
 Voter 2, ,2,1
-Voter 3,1, , 
+Voter 3,1, ,
 Voter 4,3,1,2
+Voter 5,3,1,2
+Voter 6,0,3,1
+Voter 7,2,1,0
+Voter 8,1,0,2
+Voter 9,1,0,0

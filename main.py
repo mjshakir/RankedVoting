@@ -1,29 +1,39 @@
 import argparse
-from RankedVoting.RankedVotingFromCSV import RankedVotingFromCSV
-from RankedVoting.RankedVotingFromYAML import RankedVotingFromYAML
+from RankedVoting import RankedVotingFromYAML
+from RankedVoting import RankedVotingFromCSV
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Ranked Voting System")
-    parser.add_argument("file_path", type=str, help="Path to the CSV or main folder containing YAML files.")
-    parser.add_argument("--show_intermediate", action="store_true", help="Display intermediate results.")
+    parser = argparse.ArgumentParser(description='Run a ranked voting system.')
+    parser.add_argument('input_file', help='Path to the input file in either YAML or CSV format')
+    parser.add_argument('--display_interim', default=False, action=argparse.BooleanOptionalAction,
+                        help='Whether to display interim step results. Default is False.')
+    parser.add_argument('--interim_filename', default='interim_results.json',
+                        help='The filename for saving interim step results. Default is "interim_results.json".')
+    parser.add_argument('--final_filename', default='final_results.json',
+                        help='The filename for saving final results. Default is "final_results.json".')
+
     args = parser.parse_args()
 
-    if args.file_path.lower().endswith(".csv"):
-        # CSV file
-        try:
-            ranked_voting = RankedVotingFromCSV(args.file_path, show_intermediate=args.show_intermediate)
-            results, winner = ranked_voting.run_ranked_voting()
-            ranked_voting.display_final_results(results)
-        except Exception as e:
-            print(f"Error: {e}")
+    if args.input_file.endswith('.yaml'):
+        ranked_voting = RankedVotingFromYAML(args.input_file)
+    elif args.input_file.endswith('.csv'):
+        ranked_voting = RankedVotingFromCSV(args.input_file)
     else:
-        # YAML files in a folder
-        try:
-            ranked_voting = RankedVotingFromYAML(args.file_path, show_intermediate=args.show_intermediate)
-            results, winner = ranked_voting.run_ranked_voting()
-            ranked_voting.display_final_results(results)
-        except Exception as e:
-            print(f"Error: {e}")
+        raise ValueError('Unsupported file format. Please provide a YAML or CSV file.')
 
-if __name__ == "__main__":
+    ranked_voting.run_vote()
+
+    # Display interim results if the argument is provided
+    if args.display_interim:
+        ranked_voting.display_interim_results()
+
+    # Save interim results
+    ranked_voting.save_results_to_csv(args.interim_filename)
+
+    # Save final results
+    ranked_voting.save_input_and_final_results(args.final_filename)
+
+
+if __name__ == '__main__':
     main()
