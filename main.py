@@ -1,4 +1,5 @@
 import argparse
+import random
 # from RankedVoting.RankedVotingFromCSV import RankedVotingFromCSV
 # from RankedVoting.RankedVotingFromYAML import RankedVotingFromYAML
 from RankedVoting import RankedVotingFromCSV
@@ -141,7 +142,11 @@ def main():
         'Voter 7': {'Candidate A': 2, 'Candidate B': 3, 'Candidate C': 1},
         'Voter 8': {'Candidate A': 3, 'Candidate B': 1, 'Candidate C': 2},
         'Voter 9': {'Candidate A': 1, 'Candidate B': 2, 'Candidate C': 3},
-        'Voter 10': {'Candidate A': 2, 'Candidate B': 1, 'Candidate C': 3}
+        'Voter 10': {'Candidate A': 2, 'Candidate B': 1, 'Candidate C': 3},
+        'Voter 11': {'Candidate A': 1, 'Candidate B': 0, 'Candidate C': 0},
+        'Voter 12': {'Candidate A': 1, 'Candidate B': 0, 'Candidate C': 0},
+        'Voter 13': {'Candidate A': 1, 'Candidate B': 0, 'Candidate C': 0},
+        'Voter 14': {'Candidate A': 1, 'Candidate B': 0, 'Candidate C': 0}
     }
 
     # voters_data = {
@@ -149,11 +154,44 @@ def main():
     #     'Voter 2': {'Candidate A': 0, 'Candidate B': 2, 'Candidate C': 1},
     #     'Voter 3': {'Candidate A': 1, 'Candidate B': 0, 'Candidate C': 0},
     #     'Voter 4': {'Candidate A': 3, 'Candidate B': 1, 'Candidate C': 2},
-    #     'Voter 5': {'Candidate A': 2, 'Candidate B': 1, 'Candidate C': 2},
+    #     'Voter 5': {'Candidate A': 2, 'Candidate B': 1, 'Candidate C': 3},
+    # }
+
+    # voters_data = {
+    #     'Voter 1': {'Candidate A': 3, 'Candidate B': 1, 'Candidate C': 2},
+    #     'Voter 2': {'Candidate A': 2, 'Candidate B': 1, 'Candidate C': 3},
+    #     'Voter 3': {'Candidate A': 2, 'Candidate B': 3, 'Candidate C': 1},
+    #     'Voter 4': {'Candidate A': 3, 'Candidate B': 2, 'Candidate C': 1},
+    #     'Voter 5': {'Candidate A': 1, 'Candidate B': 3, 'Candidate C': 2},
+    #     'Voter 6': {'Candidate A': 1, 'Candidate B': 2, 'Candidate C': 3},
+    #     'Voter 7': {'Candidate A': 2, 'Candidate B': 3, 'Candidate C': 1},
+    #     'Voter 8': {'Candidate A': 3, 'Candidate B': 1, 'Candidate C': 2},
+    #     'Voter 9': {'Candidate A': 1, 'Candidate B': 2, 'Candidate C': 3},
+    #     'Voter 10': {'Candidate A': 2, 'Candidate B': 1, 'Candidate C': 3},
+    #     'Voter 11': {'Candidate A': 1, 'Candidate B': 2, 'Candidate C': 3},
+    #     'Voter 12': {'Candidate A': 1, 'Candidate B': 2, 'Candidate C': 3},
+    #     'Voter 13': {'Candidate A': 1, 'Candidate B': 2, 'Candidate C': 3},
+    #     'Voter 14': {'Candidate A': 1, 'Candidate B': 2, 'Candidate C': 3}
+    # }
+
+
+    # candidates_list = [f"Candidate {i}" for i in range(1, 11)]  # 11 candidates
+
+    # voters_data = {
+    #     f"Voter {i}": {candidate: (i+j) % len(candidates_list) + 1 for j, candidate in enumerate(candidates_list)}
+    #     for i in range(1, 26)  # 25 voters
+    # }
+
+    # voters_data = {
+    #     f"Voter {i}": {candidate: random.randint(0, len(candidates_list)) for candidate in candidates_list}
+    #     for i in range(1, 11)  # 25 voters
     # }
 
     ranked_voting = RankedVoting(candidates_list, voters_data)
-    ranked_voting.run_ranked_voting()
+    ranked_voting.run_vote()
+    ranked_voting.display_interim_results()
+    ranked_voting.save_input_and_final_results("input_and_final_results.json")
+    ranked_voting.save_results_to_csv("voting_results.csv")
 
 
 if __name__ == "__main__":
