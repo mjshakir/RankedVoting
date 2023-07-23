@@ -2,16 +2,40 @@
 
 The Ranked Voting System is a method for conducting elections where voters rank candidates in order of preference. This system allows voters to express their preferences more accurately, and it helps in electing candidates who have broader support.
 
+## Getting Started
+
+### Requirements
+
+- Python 3.8+
+- pandas
+- PyYAML
+
+To install the requirements, use the provided `install.sh` (for Unix-based systems) or `install.bat` (for Windows) scripts, or manually install the dependencies using pip:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Usage
 
 To run the Ranked Voting System, execute the main Python script, providing the path to the main folder containing the input files (CSV or YAML) as a command-line argument. The script will conduct the ranked voting process and display the final results.
 
-The script provides the following options:
+### Running the Code
+To run the code, use the following command:
 
-- `input_folder`: Path to the main folder containing the input files (candidates.yaml for YAML option or the CSV file for CSV option).
-- `file_name`: Name of the input file (without the extension).
-- `file_format`: File format ('csv' or 'yaml').
-- `--intermediate`: (Optional) Display intermediate results during the ranked voting process.
+```bash
+python main.py <input_file> --display_interim <True/False> --interim_filename <interim_filename> --final_filename <final_filename>
+```
+where:
+- <input_file> is the path to the input file in either YAML or CSV format.
+- <True/False> is a Boolean indicating whether to display interim step results. The default is False.
+- <interim_filename> is the filename for saving interim step results. The default is "interim_results.json".
+- <final_filename> is the filename for saving final results. The default is "final_results.json".
+
+#### Example
+```bash
+python main.py Example/yaml/example.yaml --display_interim True --interim_filename interim.json --final_filename final.json
+```
 
 ## Expected Formats
 
@@ -77,28 +101,3 @@ Example voter4.yaml:
   Candidate B: 1
   Candidate C: 2
 ```
-## Examples
-
-### Example 1: Using CSV Format
-
-To run the Ranked Voting System using a CSV file, execute the following command:
-
-```bash
-python main.py path/to/main_folder example_csv csv
-```
-- `path/to/main_folder`: Replace this with the path to the main folder containing the CSV file.
-- `example_csv`: Replace this with the name of the CSV file (without the extension).
-- `csv`: Indicates that the input file format is CSV.
-
-
-### Example 2: Using YAML Format
-
-To run the Ranked Voting System using YAML files, execute the following command:
-
-```bash
-python main.py path/to/main_folder example_yml yaml
-```
-
-- `path/to/main_folder`: Replace this with the path to the main folder containing the candidates.yaml and voter YAML files.
-- `example_yml: Replace` this with the name of the main folder.
-- `yaml`: Indicates that the input file format is YAML.
