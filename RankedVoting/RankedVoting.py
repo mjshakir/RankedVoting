@@ -2,6 +2,7 @@ from typing import List, Dict
 import pandas as pd
 import json
 
+
 class RankedVoting:
     def __init__(self, candidates: List[str], voters_data: Dict[str, Dict[str, int]]):
         self.candidates = {candidate: 0 for candidate in candidates}
@@ -10,14 +11,19 @@ class RankedVoting:
 
     def _sanitize_preferences(self, preferences: Dict[str, int]) -> Dict[str, int]:
         sanitized_preferences = {}
+        max_preference = len(self.candidates)
         for candidate, preference in preferences.items():
             # Round float preferences to nearest integer
             if isinstance(preference, float):
                 preference = round(preference)
-            sanitized_preferences[candidate] = preference if isinstance(preference, int) else float('inf')
+            # Replace preferences that are higher than the number of candidates.yaml with 0
+            if isinstance(preference, int) and preference > max_preference:
+                preference = 0
+            sanitized_preferences[candidate] = preference
 
         # Remove preferences with 0
-        sanitized_preferences = {candidate: preference for candidate, preference in sanitized_preferences.items() if preference != 0}
+        sanitized_preferences = {candidate: preference for candidate, preference in sanitized_preferences.items() if
+                                 preference != 0}
 
         return sanitized_preferences
 
@@ -32,7 +38,6 @@ class RankedVoting:
         # Remove voters with no more preferences
         for voter in voters_to_remove:
             del self.voters[voter]
-
 
     def calculate_vote_counts(self):
         vote_counts = {candidate: 0 for candidate in self.candidates}
@@ -58,13 +63,20 @@ class RankedVoting:
             self.vote_history = pd.concat([self.vote_history, new_row], ignore_index=True)
 
             min_votes = min(vote_counts.values())
+            max_votes = max(vote_counts.values())
+
+            # If all remaining candidates.yaml have equal votes, all of them are considered winners.
+            if min_votes == max_votes:
+                print("All remaining candidates.yaml have equal votes. They are all considered winners.")
+                break
+
             min_vote_candidates = [candidate for candidate, votes in vote_counts.items() if votes == min_votes]
 
             for min_vote_candidate in min_vote_candidates:
                 del self.candidates[min_vote_candidate]
                 self.redistribute_votes(min_vote_candidate)
 
-            self.vote_history.at[round_number-1, "removed"] = min_vote_candidates
+            self.vote_history.at[round_number - 1, "removed"] = min_vote_candidates
             round_number += 1
 
         # Last round where only one candidate remains
@@ -82,8 +94,12 @@ class RankedVoting:
             print("Vote counts:")
             print(row["vote_counts"])
             total_votes = sum(row["vote_counts"].values())
+            if total_votes == 0:
+                print("No votes cast.")
+                continue
             print("Vote percentages:")
-            vote_percentages = {candidate: (votes / total_votes) * 100 for candidate, votes in row["vote_counts"].items()}
+            vote_percentages = {candidate: (votes / total_votes) * 100 for candidate, votes in
+                                row["vote_counts"].items()}
             print(vote_percentages)
             print("Removed: ", row["removed"])
             print("---------------------------")
@@ -102,7 +118,7 @@ class RankedVoting:
 
         # Prepare data to save
         data_to_save = {
-            "candidates": self.candidates,
+            "candidates.yaml": self.candidates,
             "voters": self.voters,
             "final_result": final_result,
             "final_result_percent": final_result_percent
